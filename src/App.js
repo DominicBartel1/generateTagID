@@ -7,6 +7,8 @@ import cryptoJs from 'crypto-js';
 import Table from 'react-bootstrap/Table'
 import InputGroup from 'react-bootstrap/InputGroup'
 import FormControl from 'react-bootstrap/FormControl'
+import getTypes from "./components/getTypes"
+import getCount from "./components/getCount"
 
 function App() {
   const randomValues = "1234567890qwertyuiopasdfghjklZXCVBNMQWERTYUIOPzxcvbnmASDFGHJKL"
@@ -39,24 +41,74 @@ function App() {
     202213: {}
   })
   const [tagState, setTagState] = useState({
-    202202: true,
-    202203: true,
-    202204: true,
-    202205: true,
-    202206: true,
-    202207: true,
-    202208: true,
-    202209: true,
-    202210: true,
-    202211: true,
-    202212: true,
-    202213: true
+    202202: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    },
+    202203: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    },
+    202204: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    },
+    202205: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    },
+    202206: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    },
+    202207: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    },
+    202208: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    },
+    202209: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    },
+    202210: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    },
+    202211: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    },
+    202212: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    },
+    202213: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    }
   })
   const [amount, setAmount] = useState("")
   const [salt, setSalt] = useState("")
   const [oldNewJson, setOldNew] = useState()
   const [stringData, setStringData] = useState({})
   const [storageEstimate, setEstimate] = useState()
+
+  
 
   //Quick block to get an estimate for calculating storage times
   useEffect(() => {
@@ -75,7 +127,17 @@ function App() {
     var estTime = timestampEnd - timestampStart
     console.log(estTime)
     setEstimate(estTime)
+    getTypes().then(res => {
+      getCount({tagNumber: Object.keys(res)}).then(res2 =>{
+        for(var key in res2){
+          res[key].existing = res2[key]
+        }
+        setTagState(res)
+      })
+    })
   }, [])
+
+  
 
   function msToTime(duration) {
     var returnString = "Too long to calculate";
@@ -85,61 +147,101 @@ function App() {
     return returnString
   }
 
-  function massGenerate(amount, salt) {
-    var duplicates = 0
-
-    var timestampStart = Date.now()
-    var json = {};
-    var newJson = {}
-    for (var key in tags) {
-      newJson[key] = {}
-      json[key] = { ...tags[key] }
-    }
-    var currentBatch = {}
-    for (var tagType in tags) {
-      //if tag is selected
-      if (tagState[tagType]) {
-        //Gather current amount of tags
-        // var existing = Object.keys(tags[tagType]).length
-        var currentString = ""
-        //Generate a given amount of tags
-        for (var i = 1; i < amount + 1; i++) {
-          var runGenerate = function () {
-            // var generatedId = generateId(salt, i + existing)
-            var generatedId = generateId(salt, i)
-            //if tag is duplicate
-            if (json[tagType][generatedId]) {
-              console.log("duplicate: " + generatedId)
-              duplicates++
-              runGenerate()
-            } else { //else store generated value
-              json[tagType][generatedId] = {
-                timeStamp: (new Date()).getTime(),
-                // increment: i + existing
-              }
-              newJson[tagType][generatedId] = {
-                timeStamp: (new Date()).getTime(),
-                // increment: i + existing
-              }
-              currentString += generatedId + "\n"
-            }
-          }
-          runGenerate()
-        }
-        currentBatch[tagType] = currentString
+  function listAllProduct(){
+    var returnArray = []
+    var tagKeys = Object.keys(tagState)
+    var multiplier = 1
+    for( var i in tagKeys){
+      let key = tagKeys[i]
+      let existing = tagState[key].existing
+      if(multiplier > 1 && i && !tagState[tagKeys[i]].selected){
+        multiplier--
       }
-    }
-    setOldNew({ json, newJson })
-    setStringData()
-    var timestampEnd = Date.now()
+      
+      var estimateComplete =  "--/--/---- --:--:-- --"
+      if (tagState[key].selected){
+       estimateComplete = msToTime(amount === "" ? 0 : ((amount / 50) * (existing + 1) * storageEstimate) * multiplier)
+      }
 
-    console.log((timestampEnd - timestampStart) * 0.001)
+      returnArray.push(
+        <tr onClick={() => setTagState(
+          {
+            ...tagState,
+            [key]: {
+              ...tagState[key],
+              selected: !tagState[key].selected
+            }
+          })}
+          style={{ background: tagState[key].selected ? "#0d6efd9e" : "" }}>
+          {
+            [
+              <td>{key}</td>,
+              <td>{tagState[key].productName}</td>,
+              <td>{existing}</td>,
+              <td>{estimateComplete} </td>
+            ]}
+        </tr>
+      ) 
+      multiplier++
+    }
+    return returnArray
+  
   }
+  // function massGenerate(amount, salt) {
+  //   var duplicates = 0
+
+  //   var timestampStart = Date.now()
+  //   var json = {};
+  //   var newJson = {}
+  //   for (var key in tags) {
+  //     newJson[key] = {}
+  //     json[key] = { ...tags[key] }
+  //   }
+  //   var currentBatch = {}
+  //   for (var tagType in tags) {
+  //     //if tag is selected
+  //     if (tagState[tagType]) {
+  //       //Gather current amount of tags
+  //       // var existing = Object.keys(tags[tagType]).length
+  //       var currentString = ""
+  //       //Generate a given amount of tags
+  //       for (var i = 1; i < amount + 1; i++) {
+  //         var runGenerate = function () {
+  //           // var generatedId = generateId(salt, i + existing)
+  //           var generatedId = generateId(salt, i)
+  //           //if tag is duplicate
+  //           if (json[tagType][generatedId]) {
+  //             console.log("duplicate: " + generatedId)
+  //             duplicates++
+  //             runGenerate()
+  //           } else { //else store generated value
+  //             json[tagType][generatedId] = {
+  //               timeStamp: (new Date()).getTime(),
+  //               // increment: i + existing
+  //             }
+  //             newJson[tagType][generatedId] = {
+  //               timeStamp: (new Date()).getTime(),
+  //               // increment: i + existing
+  //             }
+  //             currentString += generatedId + "\n"
+  //           }
+  //         }
+  //         runGenerate()
+  //       }
+  //       currentBatch[tagType] = currentString
+  //     }
+  //   }
+  //   setOldNew({ json, newJson })
+  //   setStringData()
+  //   var timestampEnd = Date.now()
+
+  //   console.log((timestampEnd - timestampStart) * 0.001)
+  // }
   return (
-    <div className="App" style={{ margin: "20vw" }}>
+    <div className="App" style={{ margin: "5vw" }}>
       <div id="control" style={{ marginBottom: "2px", display: 'flex' }}>
         <Button onClick={() => {
-          massGenerate(amount, salt)
+          // massGenerate(amount, salt)
         }}>
           Generate
         </Button>
@@ -147,15 +249,15 @@ function App() {
           var newState = {}
           var allSelected = true;
           for (var key in tagState) {
-            newState[key] = false;
-            if (!tagState[key]) {
+            newState[key].selected = false;
+            if (!tagState[key].selected) {
               allSelected = false;
               break;
             }
           }
           if (!allSelected) {
             for (var key in tagState) {
-              newState[key] = true;
+              newState[key].selected = true;
             }
           }
           setTagState(newState)
@@ -208,25 +310,7 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {Object.keys(tags).map((key, i) => {
-              let existing = Object.keys(tags[key]).length
-              return (
-                <tr onClick={() => setTagState(
-                  {
-                    ...tagState,
-                    [key]: !tagState[key]
-                  })}
-                  style={{ background: tagState[key] ? "#0d6efd9e" : "" }}>
-                  {
-                    [
-                      <td>{key}</td>,
-                      <td>Need api</td>,
-                      <td>{existing}</td>,
-                      <td>{tagState[key] ? msToTime(amount === "" ? 0 : ((amount / 50) * (existing + 1) * storageEstimate) * i): "--/--/---- --:--:-- --"} </td>
-                    ]}
-                </tr>
-              )
-            })}
+            {listAllProduct()}
           </tbody>
         </Table>
       </div>
