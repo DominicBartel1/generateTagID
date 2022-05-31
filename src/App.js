@@ -11,8 +11,8 @@ import getTypes from "./components/getTypes"
 import getCount from "./components/getCount"
 
 function App() {
-  
-  
+
+
   const [tagState, setTagState] = useState({
     202202: {
       selected: true,
@@ -25,20 +25,6 @@ function App() {
   const [tempTagBucket, setTempBucket] = useState()
   const [storageEstimate, setEstimate] = useState()
 
-  const randomValues = "1234567890qwertyuiopasdfghjklZXCVBNMQWERTYUIOPzxcvbnmASDFGHJKL"
-  function generateId(salt, increment) {
-
-    var hash = cryptoJs.SHA256(salt + increment)
-    var dataString = hash.toString(cryptoJs.enc.Base64)
-    // Remove special characters
-    dataString = dataString.replace(/\+/g, randomValues[Math.floor(Math.random() * randomValues.length)]).replace(/\//g, randomValues[Math.floor(Math.random() * randomValues.length)]).replace(/=/g, randomValues[Math.floor(Math.random() * randomValues.length)]);
-    // gather random 16 characters
-    var start = Math.floor(Math.random() * (dataString.length - 16))
-    var end = start + 16
-    dataString = dataString.substring(start, end)
-    return dataString;
-
-  }
 
   //Quick block to get an estimate for calculating storage times
   useEffect(() => {
@@ -49,17 +35,17 @@ function App() {
     //start time
     var timestampStart = Date.now()
     //Generate 50 keys
-    for (var i = 0; i < 50; i++) {
-      estObj["estKey"]["202202"][i] = { estData: generateId(Date.now(), i) }
-    }
+    // for (var i = 0; i < 50; i++) {
+    //   estObj["estKey"]["202202"][i] = { estData: generateId(Date.now(), i) }
+    // }
     var timestampEnd = Date.now()
     //calculate time in ms per 50 keys stored (estimate)
     var estTime = timestampEnd - timestampStart
     console.log(estTime)
     setEstimate(estTime)
     getTypes().then(res => {
-      getCount({tagNumber: Object.keys(res)}).then(res2 =>{
-        for(var key in res2){
+      getCount({ tagNumber: Object.keys(res) }).then(res2 => {
+        for (var key in res2) {
           res[key].existing = res2[key]
         }
         setTagState(res)
@@ -67,12 +53,84 @@ function App() {
     })
   }, [])
 
-  function massGenerate(){
-    for(var i = 0; i < amount; i++){
-      
+
+
+  //function to iterate requested types, generate and store them ascync
+  async function massGenerate(options) {
+    var url = !window.ENV.dev ? window.ENV.functions_url + "storeTags" + window.ENV.functionSecret : window.ENV.dev_url + "storeTags";
+    //ammount of tagvalues to attempt storing in one increment
+    const storageIncrementAmount = 50
+
+    const randomValues = "1234567890qwertyuiopasdfghjklZXCVBNMQWERTYUIOPzxcvbnmASDFGHJKL"
+    function generateId() {
+      var hash = cryptoJs.SHA256(options.salt)
+      var dataString = hash.toString(cryptoJs.enc.Base64)
+      // Remove special characters
+      dataString = dataString.replace(/\+/g, randomValues[Math.floor(Math.random() * randomValues.length)]).replace(/\//g, randomValues[Math.floor(Math.random() * randomValues.length)]).replace(/=/g, randomValues[Math.floor(Math.random() * randomValues.length)]);
+      // gather random 16 characters
+      var start = Math.floor(Math.random() * (dataString.length - 16))
+      var end = start + 16
+      dataString = dataString.substring(start, end)
+      return dataString;
     }
+
+    var responses = {}
+
+    async function storeBlock(block) {
+      let data = {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      }
+      data.body = JSON.stringify({tags: block})
+
+      await fetch(url, data)
+        .then(res => res.json())
+        .then(
+          (result) => {
+            console.log(result)
+          },
+          (error) => {
+
+          }
+        )
+    }
+
+    async function iterateType(type) {
+      async function recursiveCreate(type, amount) {
+        var block = {}
+        for (var j = 0; j < amount; j++) {
+          let id = generateId()
+          block[id] = {
+            salt: options.salt,
+            timeStamp: new Date().getTime(),
+            idValue: id,
+            tagNumber: type
+          }
+        }
+        storeBlock(block)
+      }
+      for (var i = options.amount; i > 0; i = i - storageIncrementAmount) {
+        if (i - storageIncrementAmount > -1) {
+          recursiveCreate(type, storageIncrementAmount)
+        } else if (i > 0) {
+          recursiveCreate(type, i)
+        }
+      }
+    }
+
+    for (var type in options.tagState) {
+      if (options.tagState[type].selected) {
+        iterateType(type)
+      }
+    }
+
+
+    return responses
   }
-  
+
 
   function msToTime(duration) {
     var returnString = "Too long to calculate";
@@ -82,20 +140,20 @@ function App() {
     return returnString
   }
 
-  function listAllProduct(){
+  function listAllProduct() {
     var returnArray = []
     var tagKeys = Object.keys(tagState)
     var multiplier = 1
-    for( var i in tagKeys){
+    for (var i in tagKeys) {
       let key = tagKeys[i]
       let existing = tagState[key].existing
-      if(multiplier > 0 && !tagState[tagKeys[i]].selected){
+      if (multiplier > 0 && !tagState[tagKeys[i]].selected) {
         multiplier--
       }
-      
-      var estimateComplete =  "--/--/---- --:--:-- --"
-      if (tagState[key].selected){
-       estimateComplete = msToTime(amount === "" ? 0 : ((amount / 50) * (existing + 1) * storageEstimate) * multiplier)
+
+      var estimateComplete = "--/--/---- --:--:-- --"
+      if (tagState[key].selected) {
+        estimateComplete = msToTime(amount === "" ? 0 : ((amount / 50) * (existing + 1) * storageEstimate) * multiplier)
       }
 
       returnArray.push(
@@ -116,11 +174,11 @@ function App() {
               <td>{estimateComplete} </td>
             ]}
         </tr>
-      ) 
+      )
       multiplier++
     }
     return returnArray
-  
+
   }
   // async function massGenerate(amount, salt) {
   //   var duplicates = 0
@@ -192,8 +250,12 @@ function App() {
           }
           setTagState(newState)
         }}>Select/Deselect all</Button>
-        <Button disabled={tempTagBucket ? false : true} onClick={() => {
-          console.log(tempTagBucket)
+        <Button disabled={amount && salt ? false : true} onClick={() => {
+          massGenerate({
+            salt: salt,
+            amount: amount,
+            tagState: tagState,
+          })
           // setTags(oldNewJson.json)
           // setOldNew()
         }}>
