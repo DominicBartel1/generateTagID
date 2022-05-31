@@ -11,6 +11,20 @@ import getTypes from "./components/getTypes"
 import getCount from "./components/getCount"
 
 function App() {
+  
+  
+  const [tagState, setTagState] = useState({
+    202202: {
+      selected: true,
+      productName: "test",
+      existing: 123
+    }
+  })
+  const [amount, setAmount] = useState("")
+  const [salt, setSalt] = useState("")
+  const [tempTagBucket, setTempBucket] = useState()
+  const [storageEstimate, setEstimate] = useState()
+
   const randomValues = "1234567890qwertyuiopasdfghjklZXCVBNMQWERTYUIOPzxcvbnmASDFGHJKL"
   function generateId(salt, increment) {
 
@@ -25,90 +39,6 @@ function App() {
     return dataString;
 
   }
-
-  const [tags, setTags] = useState({
-    202202: {},
-    202203: {},
-    202204: {},
-    202205: {},
-    202206: {},
-    202207: {},
-    202208: {},
-    202209: {},
-    202210: {},
-    202211: {},
-    202212: {},
-    202213: {}
-  })
-  const [tagState, setTagState] = useState({
-    202202: {
-      selected: true,
-      productName: "test",
-      existing: 123
-    },
-    202203: {
-      selected: true,
-      productName: "test",
-      existing: 123
-    },
-    202204: {
-      selected: true,
-      productName: "test",
-      existing: 123
-    },
-    202205: {
-      selected: true,
-      productName: "test",
-      existing: 123
-    },
-    202206: {
-      selected: true,
-      productName: "test",
-      existing: 123
-    },
-    202207: {
-      selected: true,
-      productName: "test",
-      existing: 123
-    },
-    202208: {
-      selected: true,
-      productName: "test",
-      existing: 123
-    },
-    202209: {
-      selected: true,
-      productName: "test",
-      existing: 123
-    },
-    202210: {
-      selected: true,
-      productName: "test",
-      existing: 123
-    },
-    202211: {
-      selected: true,
-      productName: "test",
-      existing: 123
-    },
-    202212: {
-      selected: true,
-      productName: "test",
-      existing: 123
-    },
-    202213: {
-      selected: true,
-      productName: "test",
-      existing: 123
-    }
-  })
-  const [amount, setAmount] = useState("")
-  const [salt, setSalt] = useState("")
-  const [oldNewJson, setOldNew] = useState()
-  const [stringData, setStringData] = useState({})
-  const [storageEstimate, setEstimate] = useState()
-
-  
 
   //Quick block to get an estimate for calculating storage times
   useEffect(() => {
@@ -137,6 +67,11 @@ function App() {
     })
   }, [])
 
+  function massGenerate(){
+    for(var i = 0; i < amount; i++){
+      
+    }
+  }
   
 
   function msToTime(duration) {
@@ -154,7 +89,7 @@ function App() {
     for( var i in tagKeys){
       let key = tagKeys[i]
       let existing = tagState[key].existing
-      if(multiplier > 1 && i && !tagState[tagKeys[i]].selected){
+      if(multiplier > 0 && !tagState[tagKeys[i]].selected){
         multiplier--
       }
       
@@ -187,7 +122,7 @@ function App() {
     return returnArray
   
   }
-  // function massGenerate(amount, salt) {
+  // async function massGenerate(amount, salt) {
   //   var duplicates = 0
 
   //   var timestampStart = Date.now()
@@ -241,12 +176,7 @@ function App() {
     <div className="App" style={{ margin: "5vw" }}>
       <div id="control" style={{ marginBottom: "2px", display: 'flex' }}>
         <Button onClick={() => {
-          // massGenerate(amount, salt)
-        }}>
-          Generate
-        </Button>
-        <Button onClick={() => {
-          var newState = {}
+          var newState = JSON.parse(JSON.stringify(tagState))
           var allSelected = true;
           for (var key in tagState) {
             newState[key].selected = false;
@@ -262,12 +192,12 @@ function App() {
           }
           setTagState(newState)
         }}>Select/Deselect all</Button>
-        <Button disabled={oldNewJson ? false : true} onClick={() => {
-          console.log(oldNewJson)
-          setTags(oldNewJson.json)
-          setOldNew()
+        <Button disabled={tempTagBucket ? false : true} onClick={() => {
+          console.log(tempTagBucket)
+          // setTags(oldNewJson.json)
+          // setOldNew()
         }}>
-          Download/store
+          Generate/Download
         </Button>
       </div>
       <div id="control" style={{ marginBottom: "2px", display: 'flex' }}>
