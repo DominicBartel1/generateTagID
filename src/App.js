@@ -62,8 +62,8 @@ function App() {
     const storageIncrementAmount = 50
 
     const randomValues = "1234567890qwertyuiopasdfghjklZXCVBNMQWERTYUIOPzxcvbnmASDFGHJKL"
-    function generateId() {
-      var hash = cryptoJs.SHA256(options.salt)
+    function generateId(type, i) {
+      var hash = cryptoJs.SHA256(options.salt + i + type)
       var dataString = hash.toString(cryptoJs.enc.Base64)
       // Remove special characters
       dataString = dataString.replace(/\+/g, randomValues[Math.floor(Math.random() * randomValues.length)]).replace(/\//g, randomValues[Math.floor(Math.random() * randomValues.length)]).replace(/=/g, randomValues[Math.floor(Math.random() * randomValues.length)]);
@@ -108,7 +108,7 @@ function App() {
 
               }
               if (errorVals) {
-                recursiveCreate(result.type, errorVals)
+                recursiveCreate(result.type, errorVals, tagState[result.type].existing)
               } else if (Object.keys(stored).length >= amount) {
                 console.log(stored)
                 setTagState({
@@ -125,10 +125,10 @@ function App() {
             }
           )
       }
-      async function recursiveCreate(type, amount) {
+      async function recursiveCreate(type, givenAmount, i) {
         var block = {}
-        for (var j = 0; j < amount; j++) {
-          let id = generateId()
+        for (var j = 0; j < givenAmount; j++) {
+          let id = generateId(type, i + j)
           block[id] = {
             salt: options.salt,
             timeStamp: new Date().getTime(),
@@ -138,11 +138,11 @@ function App() {
         }
         storeBlock(block)
       }
-      for (var i = options.amount; i > 0; i = i - storageIncrementAmount) {
-        if (i - storageIncrementAmount > -1) {
-          recursiveCreate(type, storageIncrementAmount)
-        } else if (i > 0) {
-          recursiveCreate(type, i)
+      for (var i = 0; i <= options.amount; i = i + storageIncrementAmount) {
+        if (i + storageIncrementAmount <= options.amount) {
+          recursiveCreate(type, storageIncrementAmount, i)
+        } else if (i <= options.amount) {
+          recursiveCreate(type, i, i)
         }
       }
     }
