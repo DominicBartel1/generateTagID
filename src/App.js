@@ -74,31 +74,57 @@ function App() {
       return dataString;
     }
 
-    var responses = {}
 
-    async function storeBlock(block) {
-      let data = {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      }
-      data.body = JSON.stringify({tags: block})
-
-      await fetch(url, data)
-        .then(res => res.json())
-        .then(
-          (result) => {
-            console.log(result)
-          },
-          (error) => {
-
-          }
-        )
-    }
 
     async function iterateType(type) {
+      var stored = {}
+
+      async function storeBlock(block) {
+        let data = {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        }
+        data.body = JSON.stringify({ tags: block })
+
+        await fetch(url, data)
+          .then(res => res.json())
+          .then(
+            (result) => {
+              console.log(result)
+              let errorVals = 0
+              for (var tag in result) {
+                if (tag !== "type") {
+                  if (result[tag].error) {
+                    errorVals++
+                  } else {
+                    stored[tag] = {
+                      ...result[tag]
+                    }
+                  }
+                }
+
+              }
+              if (errorVals) {
+                recursiveCreate(result.type, errorVals)
+              } else if (Object.keys(stored).length >= amount) {
+                console.log(stored)
+                setTagState({
+                  ...tagState,
+                  [result.type]: {
+                    ...tagState[result.type],
+                    existing: tagState[result.type].existing + Object.keys(stored).length,
+                  },
+                })
+              }
+            },
+            (error) => {
+
+            }
+          )
+      }
       async function recursiveCreate(type, amount) {
         var block = {}
         for (var j = 0; j < amount; j++) {
@@ -126,9 +152,6 @@ function App() {
         iterateType(type)
       }
     }
-
-
-    return responses
   }
 
 
