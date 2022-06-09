@@ -9,6 +9,7 @@ import InputGroup from 'react-bootstrap/InputGroup'
 import FormControl from 'react-bootstrap/FormControl'
 import getTypes from "./components/getTypes"
 import getCount from "./components/getCount"
+import { LoadBar } from './components/loadBar';
 
 function App() {
 
@@ -22,8 +23,24 @@ function App() {
   })
   const [amount, setAmount] = useState("")
   const [salt, setSalt] = useState("")
-  const [tempTagBucket, setTempBucket] = useState()
   const [storageEstimate, setEstimate] = useState()
+  const [loadData, setLoadData] = useState({
+    loadBars:{
+      220202:{
+        toStore: 456,
+        stored: 23
+      },
+      220702:{
+        toStore: 456,
+        stored: 23
+      },
+      220294:{
+        toStore: 456,
+        stored: 23
+      }
+    },
+    show: true
+  })
 
 
   //Quick block to get an estimate for calculating storage times
@@ -41,8 +58,8 @@ function App() {
     var timestampEnd = Date.now()
     //calculate time in ms per 50 keys stored (estimate)
     var estTime = timestampEnd - timestampStart
-    console.log(estTime)
-    setEstimate(estTime)
+    //for now just set est time to 1, may build function to measure latency between device and server later
+    setEstimate(1)
     getTypes().then(res => {
       getCount({ tagNumber: Object.keys(res) }).then(res2 => {
         for (var key in res2) {
@@ -95,6 +112,7 @@ function App() {
             (result) => {
               console.log(result)
               let errorVals = 0
+              //check for duplicates or other failed storage
               for (var tag in result) {
                 if (tag !== "type") {
                   if (result[tag].error) {
@@ -107,6 +125,7 @@ function App() {
                 }
 
               }
+              //if duplicates attempt another store
               if (errorVals) {
                 recursiveCreate(result.type, errorVals, tagState[result.type].existing)
               } else if (Object.keys(stored).length >= amount) {
@@ -284,6 +303,7 @@ function App() {
         }}>
           Generate/Download
         </Button>
+        <LoadBar  data={loadData}></LoadBar>
       </div>
       <div id="control" style={{ marginBottom: "2px", display: 'flex' }}>
         <InputGroup >
